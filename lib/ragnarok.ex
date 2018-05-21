@@ -1,51 +1,64 @@
 defmodule Ragnarok do
+  use Application
   @moduledoc """
   Documentation for Ragnarok.
   """
 
-  def run(n_workers, url) when n_workers > 0 do
-    worker_fun = fn -> Ragnarok.Worker.start(url) end
+  def start(_type, _args) do
+    import Supervisor.Spec, warn: false
 
-    1..n_workers
-    |> Enum.map(fn _ -> Task.async(worker_fun) end)
-    |> Enum.map(&Task.await(&1, :infinity))
+    children = [
+      supervisor(Ragnarok.Supervisor, [:ok])
+    ]
+
+    opts = [strategy: :one_for_one, name: __MODULE__]
+
+    Supervisor.start_link(children, opts)
   end
 
-  defp parse_results(results) do
-    {successes, _failures} = 
-      Results
-      |> Enum.partition(fn x -> 
-        case x do
-          {:ok, _} -> true 
-          _ -> false
-        end
-      end)
+  # def run(n_workers, url) when n_workers > 0 do
+  #   worker_fun = fn -> Ragnarok.Worker.start(url) end
 
-    total_workers = Enum.count(results)
-    total_success = Enum.count(successes)
-    total_failure = total_workers - total_success
+  #   1..n_workers
+  #   |> Enum.map(fn _ -> Task.async(worker_fun) end)
+  #   |> Enum.map(&Task.await(&1, :infinity))
+  # end
 
-    data = successes |> Enum.map(fn {:ok, time} -> time end)
-    average_time = average(data)
-    longest_time = Enum.max(data)
-    shortest_time = Enum.min(data)
+  # defp parse_results(results) do
+  #   {successes, _failures} = 
+  #     Results
+  #     |> Enum.partition(fn x -> 
+  #       case x do
+  #         {:ok, _} -> true 
+  #         _ -> false
+  #       end
+  #     end)
 
-    IO.puts """
-    Total workers    : #{total_workers}
-    Successful reqs  : #{total_success}
-    Failed res       : #{total_failure}
-    Average (msecs)  : #{average_time}
-    Longest (msecs)  : #{longest_time}
-    Shortest (msecs) : #{shortest_time}
-    """
-  end
+  #   total_workers = Enum.count(results)
+  #   total_success = Enum.count(successes)
+  #   total_failure = total_workers - total_success
 
-  defp average(list) do
-    sum = Enum.sum(list)
-    if sum > 0 do
-      sum / Enum.count(list)
-    else
-      0
-    end
-  end
+  #   data = successes |> Enum.map(fn {:ok, time} -> time end)
+  #   average_time = average(data)
+  #   longest_time = Enum.max(data)
+  #   shortest_time = Enum.min(data)
+
+  #   IO.puts """
+  #   Total workers    : #{total_workers}
+  #   Successful reqs  : #{total_success}
+  #   Failed res       : #{total_failure}
+  #   Average (msecs)  : #{average_time}
+  #   Longest (msecs)  : #{longest_time}
+  #   Shortest (msecs) : #{shortest_time}
+  #   """
+  # end
+
+  # defp average(list) do
+  #   sum = Enum.sum(list)
+  #   if sum > 0 do
+  #     sum / Enum.count(list)
+  #   else
+  #     0
+  #   end
+  # end
 end
